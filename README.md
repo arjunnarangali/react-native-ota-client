@@ -9,7 +9,7 @@ OTA can update JavaScript and bundled assets. Native code, permissions, React Na
 - Android only; iOS OTA support is not implemented.
 - React Native 0.88.x, Android New Architecture, and Hermes.
 - Android min SDK 24.
-- A host application with a release-signing/public-key setup and a compatible OTA service.
+- A host application with a release-signing setup and a public verification key.
 
 ## Installation
 
@@ -21,7 +21,6 @@ React Native autolinking discovers the Android package. Rebuild the native appli
 
 For local development, the example workspace consumes the SDK source directly. In a host app, install the package using the command above.
 
-```json
 ## JavaScript API
 
 ```tsx
@@ -39,33 +38,68 @@ The package also retains the generated-template `multiply()` example; it is not 
 
 ## Android configuration
 
-Each host application owns its flavors, IDs, runtime versions, channels, server URL, base version, public verification key, and build-type debug state. Before starting React Native, construct `OtaSdkConfig` with values from the selected app flavor and initialize the SDK:
+Configure the SDK once in the host application's `Application` class. Initialize it in `onCreate()` before calling `loadReactNative()`, and provide the selected bundle path to React Native's host configuration. The SDK's own `BuildConfig.DEBUG` is not the consumer app's build type.
 
 ```kotlin
-val publicKeyPem = resources.openRawResource(R.raw.ota_publisher_public).use { it.readBytes() }
-OtaSdkUpdates.initialize(
-    this,
-    OtaSdkConfig(
-        serverUrl = BuildConfig.OTA_SERVER_URL,
-        runtimeVersion = BuildConfig.OTA_RUNTIME_VERSION,
-        channel = BuildConfig.OTA_CHANNEL,
-        baseVersion = BuildConfig.OTA_BASE_VERSION,
-        publicKeyPem = publicKeyPem,
-        allowInsecureHttp = BuildConfig.OTA_ALLOW_INSECURE_HTTP,
-        isDebugBuild = BuildConfig.DEBUG,
-        appId = BuildConfig.APPLICATION_ID,
-    ),
-)
-OtaSdkUpdates.beginProcess()
+import android.app.Application
+import com.facebook.react.PackageList
+import com.facebook.react.ReactApplication
+import com.facebook.react.ReactHost
+import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
+import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
+import com.otasdk.OtaSdkUpdates
+
+class MainApplication : Application(), ReactApplication {
+  override val reactHost: ReactHost by lazy {
+    getDefaultReactHost(
+      context = applicationContext,
+      packageList = PackageList(this).packages,
+      jsBundleFilePath = OtaSdkUpdates.bundlePathForReactHost(),
+    )
+  }
+
+  override fun onCreate() {
+    super.onCreate()
+    val publicKeyPem = resources.openRawResource(R.raw.ota_publisher_public).use { it.readBytes() }
+    val config = otaSdkConfigForCurrentVariant(publicKeyPem)
+    OtaSdkUpdates.initialize(this, config)
+    OtaSdkUpdates.beginProcess()
+    loadReactNative(this)
+  }
+}
 ```
 
-Do this in the host app's `Application.onCreate()` before `loadReactNative()`. Pass `OtaSdkUpdates.bundlePathForReactHost()` to React Native's host configuration so an activated OTA bundle is selected before the JS runtime starts. The SDK's own `BuildConfig.DEBUG` is not the consumer app's build type.
+Call `beginProcess()` before `loadReactNative()` so the selected bundle is ready when the JS runtime starts. `bundlePathForReactHost()` returns `null` when the APK bundle should be used.
 
-The public key resource contains only the verification key. Never package the publisher's signing private key in the app or SDK.
+The `ota_publisher_public` Android raw resource contains only the verification key. It may be placed in `src/main/res/raw/` when shared by all variants, or in a flavor-specific source set such as `src/development/res/raw/` when variants use different keys. Never package the publisher's signing private key in the app or SDK.
 
-### Transport security
+### Flavor-specific configuration
 
-Use HTTPS for staging and production, with `allowInsecureHttp = false`. Local development may opt in to HTTP only when the URL host is a local development host supported by the SDK (`localhost`, `127.0.0.1`, `::1`, or Android emulator host `10.0.2.2`). The setting is not a general HTTP override. OTA download URLs must also match the configured server origin.
+Define each environment as an Android `productFlavor` and provide the SDK values as flavor-specific `BuildConfig` fields. The flavor controls the app ID, runtime version, channel, base version, and public key source set; use distinct runtime versions and channels when environments must receive separate updates. For example:
+
+```groovy
+android {
+    flavorDimensions "environment"
+    productFlavors {
+        development {
+            dimension "environment"
+            applicationIdSuffix ".dev"
+            buildConfigField "String", "OTA_RUNTIME_VERSION", '"rn-0.88-android-dev"'
+            buildConfigField "String", "OTA_CHANNEL", '"development"'
+            buildConfigField "int", "OTA_BASE_VERSION", "0"
+        }
+        staging {
+            dimension "environment"
+            applicationIdSuffix ".staging"
+            buildConfigField "String", "OTA_RUNTIME_VERSION", '"rn-0.88-android-staging"'
+            buildConfigField "String", "OTA_CHANNEL", '"staging"'
+            buildConfigField "int", "OTA_BASE_VERSION", "0"
+        }
+    }
+}
+```
+
+The host application's configuration helper should import `com.otasdk.OtaSdkConfig` and build a fully populated config for the selected variant. The `OTA_*` field names and types must match those read by that helper. Set `react.debuggableVariants` for every flavor's debug variants (for example, `developmentDebug` and `stagingDebug`) so React Native uses Metro for those builds. `BuildConfig.DEBUG` is supplied by the selected build type, while `BuildConfig.APPLICATION_ID` includes any flavor suffix.
 
 ## Native startup operations
 
@@ -79,6 +113,8 @@ Use HTTPS for staging and production, with `allowInsecureHttp = false`. Local de
 The SDK autolinks a single `OtaSdkPackage` containing both the sample `OtaSdk` TurboModule and the OTA `OTAUpdates` TurboModule. Do not add another manual package registration in the host app.
 
 ## Development and verification
+
+For implementation architecture, behavioral invariants, suggested change workflow, and verification commands, see the [coding-agent implementation guide](agent.md).
 
 From the SDK package directory, install the locked Yarn dependencies with the bundled Yarn executable and build its example:
 
@@ -94,7 +130,7 @@ cd example/android
 ./gradlew :react-native-ota-client:testDebugUnitTest
 ```
 
-Build a development debug app to verify native linking and Metro. OTA activation requires a development release APK. The compatible FastAPI service and its deployment instructions are maintained in the standalone [`react-native-ota-server`](https://github.com/arjunnarangali/react-native-ota-server) repository. Configure the host app with its API origin, Android app ID, runtime version, channel, and public verification key; see that repository's README and API docs for the server contract.
+Build a development debug app to verify native linking and Metro. OTA activation requires a release APK; debug builds use Metro and report activation as disabled.
 
 ## License
 
