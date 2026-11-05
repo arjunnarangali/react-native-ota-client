@@ -1,14 +1,15 @@
 # react-native-ota-client
 
-Android OTA update support for React Native applications using the New Architecture and Hermes. The SDK checks for signed releases, verifies the release manifest and packaged bundle, stages verified updates, selects the bundle on cold start, and rolls back a release that does not confirm healthy.
+Android and iOS OTA update support for React Native applications using the New Architecture and Hermes. The SDK checks for signed releases, verifies the release manifest and packaged bundle, stages verified updates, selects the bundle on cold start, and rolls back a release that does not confirm healthy.
 
-OTA can update JavaScript and bundled assets. Native code, permissions, React Native/Hermes versions, and Codegen contract changes require a new APK.
+OTA can update JavaScript and bundled assets. Native code, permissions/entitlements, React Native/Hermes versions, and Codegen contract changes require a new APK/IPA.
 
 ## Requirements and support
 
-- Android only; iOS OTA support is not implemented.
+- Android and iOS.
 - React Native 0.88.x, Android New Architecture, and Hermes.
 - Android min SDK 24.
+- iOS New Architecture and Hermes; use the host app's iOS deployment target supported by its React Native version.
 - A host application with a release-signing setup and a public verification key.
 
 ## Installation
@@ -17,7 +18,7 @@ OTA can update JavaScript and bundled assets. Native code, permissions, React Na
 npm install react-native-ota-client
 ```
 
-React Native autolinking discovers the Android package. Rebuild the native application after installation; Metro alone cannot add native code.
+React Native autolinking discovers the native package on Android and iOS. Rebuild the native application after installation; Metro alone cannot add native code.
 
 For local development, the example workspace consumes the SDK source directly. In a host app, install the package using the command above.
 
@@ -33,6 +34,8 @@ await OTAUpdates.closeAppToApplyUpdate();
 ```
 
 `markUpdateSuccessful()` should run after the first React screen has mounted. `closeAppToApplyUpdate()` only succeeds when a verified update is staged and waiting for a restart. Debug applications report OTA activation as disabled because Metro supplies the JavaScript bundle.
+
+On iOS, apps cannot terminate themselves. When `closeAppToApplyUpdate()` returns `true`, ask the user to leave and reopen the app to load the staged bundle.
 
 The package also retains the generated-template `multiply()` example; it is not part of the OTA API.
 
@@ -132,6 +135,40 @@ Use HTTPS for staging and production, with `allowInsecureHttp = false`. Local de
 
 The SDK autolinks a single `OtaSdkPackage` containing both the sample `OtaSdk` TurboModule and the OTA `OTAUpdates` TurboModule. Do not add another manual package registration in the host app.
 
+## iOS configuration
+
+Configure the SDK in the host app before creating the React Native factory/runtime. `beginProcess()` must run before startup bundle selection. In `RCTDefaultReactNativeFactoryDelegate.bundleURL()`, retain Metro in Debug and use the OTA URL before the embedded bundle in Release:
+
+```swift
+import OtaSdk
+
+// In AppDelegate, before the SceneDelegate starts React Native:
+OtaSdkUpdates.initialize(
+  serverUrl: serverURL,
+  runtimeVersion: runtimeVersion,
+  channel: channel,
+  baseVersion: NSNumber(value: baseVersion),
+  publicKeyPem: publicKeyPEM,
+  isDebugBuild: isDebugBuild,
+  appId: appId,
+  allowLocalHttp: allowLocalHTTP
+)
+OtaSdkUpdates.beginProcess()
+
+// In the React Native factory delegate:
+override func bundleURL() -> URL? {
+  #if DEBUG
+  RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+  #else
+  OtaSdkUpdates.bundleURL() ?? Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+  #endif
+}
+```
+
+Provide the configuration from host-owned build settings and bundle only the public verification key. Use HTTPS for release builds. `allowLocalHttp` is for explicit local development only and is restricted to `localhost`, `127.0.0.1`, or `::1`; OTA downloads must match the configured server origin. iOS returns whether an update is staged from `closeAppToApplyUpdate()` and requires the user to relaunch. Call `markUpdateSuccessful()` after the first usable React screen mounts.
+
+The example app reads `OTA_SERVER_URL`, `OTA_RUNTIME_VERSION`, and `OTA_CHANNEL` from its Info.plist build substitutions and expects an `ota_publisher_public.pem` public key resource in the app bundle. Configure these values and add the matching public key to exercise its OTA flow.
+
 ## Development and verification
 
 For implementation architecture, behavioral invariants, suggested change workflow, and verification commands, see the [coding-agent implementation guide](agent.md).
@@ -143,7 +180,7 @@ node .yarn/releases/yarn-4.18.1.cjs install
 node .yarn/releases/yarn-4.18.1.cjs workspace react-native-ota-client-example build:android
 ```
 
-The library unit tests run through the example's Gradle project:
+The Android library unit tests run through the example's Gradle project:
 
 ```sh
 cd example/android
@@ -151,6 +188,15 @@ cd example/android
 ```
 
 Build a development debug app to verify native linking and Metro. OTA activation requires a release APK; debug builds use Metro and report activation as disabled.
+
+For iOS, run `pod install` from `example/ios`, then build the `OtaSdkExample` scheme for Debug and Release. Debug uses Metro; Release selects a verified OTA bundle when configured and otherwise uses the embedded bundle. The standalone activation-state checks can be run from the package root with:
+
+```sh
+swiftc ios/OtaActivationPolicy.swift ios/Tests/main.swift -o /tmp/ota-activation-policy-tests
+/tmp/ota-activation-policy-tests
+```
+
+Signature/package validation tests and live simulator/device activation and rollback exercises remain required before claiming end-to-end OTA readiness.
 
 For the companion OTA server API and release contract, see the [`react-native-ota-server` GitHub repository](https://github.com/arjunnarangali/react-native-ota-server).
 

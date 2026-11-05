@@ -4,7 +4,7 @@ This file is a handoff for agents implementing changes in `react-native-ota-clie
 
 ## Project scope
 
-- This package implements Android OTA updates for React Native 0.88.x using the New Architecture and Hermes. iOS OTA is not implemented.
+- This package implements Android and iOS OTA updates for React Native 0.88.x using the New Architecture and Hermes.
 - The package includes native Kotlin code, a TurboModule JavaScript contract, generated Codegen integration, and an example React Native app.
 - OTA payloads update JavaScript and assets only. Changes to native code, permissions, React Native/Hermes versions, or the Codegen contract require a new APK.
 
@@ -19,6 +19,8 @@ This file is a handoff for agents implementing changes in `react-native-ota-clie
 | Release verification | `android/src/main/java/com/otasdk/OtaReleaseManifest.kt` | Parse and verify signed release metadata against the configured app, runtime, channel, and public key. |
 | Bundle installation | `android/src/main/java/com/otasdk/OtaBundleInstaller.kt` | Safely extract and validate the Hermes bundle and assets before activation. |
 | Activation and rollback | `android/src/main/java/com/otasdk/OtaActivationPolicy.kt` | Pure state transitions for startup, pending updates, health confirmation, and rollback. |
+| iOS OTA management | `ios/OtaSdkUpdates.swift` | Configure the host integration, verify/download/install iOS releases, select bundles, and persist activation/rollback state. |
+| iOS TurboModule | `ios/OTAUpdates.mm` | Implement the shared `NativeOTAUpdates` TurboModule API; iOS reports staged state instead of terminating itself. |
 | Example host | `example/android/app/` | Demonstrates React Native Android build/linking. Host apps initialize `OtaSdkUpdates` in their `Application` class as described in README. |
 
 ## Lifecycle and host integration
@@ -40,13 +42,15 @@ Import the host API from `com.otasdk.OtaSdkConfig` and `com.otasdk.OtaSdkUpdates
 - OTA artifacts are runtime-specific. A runtime-version change must invalidate stored bundles so a bundle built for another native runtime cannot start.
 - Startup must fall back to the APK bundle if an active OTA bundle is missing or fails validation. A newly selected release is provisional until `markUpdateSuccessful()` confirms health; preserve rollback behavior.
 - Debug builds use Metro and OTA activation is disabled. Derive this behavior from the host app's build type passed through `isDebugBuild`, not the SDK library's own `BuildConfig`.
+- iOS host apps must call `OtaSdkUpdates.initialize()` and `beginProcess()` before React Native starts, then select `OtaSdkUpdates.bundleURL()` before falling back to the embedded IPA bundle.
+- iOS startup and TurboModule behavior must remain aligned with Android and the signed server release contract. Validate native changes with iOS build/tests and preserve Android regression coverage.
 - Only package a public verification key in the app. Never add or log a signing private key.
 - Preserve input validation, release verification, and artifact integrity checks; do not disable them to make a test pass.
 
 ## Implementation workflow
 
 1. Trace the relevant call path across the JS spec, native module, SDK entry point, manager, and policy/installer before changing behavior.
-2. Keep state-transition logic in `OtaActivationPolicy` where possible; it is pure and independently testable. Keep Android I/O and persistence in the manager/installer.
+2. Keep activation state transitions independently testable. Keep platform-specific I/O and persistence in the corresponding manager/installer.
 3. When changing a JS TurboModule method or its argument/result shape, update `src/NativeOTAUpdates.ts` and the corresponding Kotlin module implementation together. Keep Codegen package/name conventions intact.
 4. Add or update focused tests under `android/src/test/java/com/otasdk/` for policy and manifest behavior. Avoid tests that duplicate the implementation without checking observable behavior.
 5. Update README when host setup, public API, flavor/build variants, or required verification steps change.
@@ -67,6 +71,15 @@ Run Android library unit tests from `example/android`:
 ```sh
 ./gradlew :react-native-ota-client:testDebugUnitTest
 ```
+
+Run the standalone iOS activation-state checks from the package root:
+
+```sh
+swiftc ios/OtaActivationPolicy.swift ios/Tests/main.swift -o /tmp/ota-activation-policy-tests
+/tmp/ota-activation-policy-tests
+```
+
+For iOS module integration, run `pod install` from `example/ios` and build the `OtaSdkExample` workspace with Xcode. Simulator/device OTA network and rollback tests require a configured server, matching publisher public key, and compatible signed iOS artifact.
 
 For host build/linking changes, build the example as described in README. Build tasks require the local Android SDK and a configured Java/Gradle environment.
 

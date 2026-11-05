@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
+	<dict>
+	<key>OTA_SERVER_URL</key>
+	<string>$(OTA_SERVER_URL)</string>
+	<key>OTA_RUNTIME_VERSION</key>
+	<string>$(OTA_RUNTIME_VERSION)</string>
+	<key>OTA_CHANNEL</key>
+	<string>$(OTA_CHANNEL)</string>
+	<key>OTA_APP_ID</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>OTA_BASE_VERSION</key>
+	<integer>0</integer>
+	<key>OTA_ALLOW_LOCAL_HTTP</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

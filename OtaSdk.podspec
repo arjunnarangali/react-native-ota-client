@@ -14,7 +14,9 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/arjunnarangali/react-native-ota-client.git", :tag => "v#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift,cpp}"
+  s.exclude_files = "ios/Tests/**/*"
   s.private_header_files = "ios/**/*.h"
 
+  s.dependency "ZIPFoundation", "~> 0.9"
   install_modules_dependencies(s)
 end

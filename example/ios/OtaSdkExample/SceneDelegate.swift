@@ -1,6 +1,7 @@
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
+import OtaSdk
 import UIKit
 
 class SceneDelegate: RCTDefaultReactNativeFactoryDelegate, UIWindowSceneDelegate {
@@ -50,7 +51,7 @@ class SceneDelegate: RCTDefaultReactNativeFactoryDelegate, UIWindowSceneDelegate
     #if DEBUG
     RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
     #else
-    Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    OtaSdkUpdates.bundleURL() ?? Bundle.main.url(forResource: "main", withExtension: "jsbundle")
     #endif
   }
 }
