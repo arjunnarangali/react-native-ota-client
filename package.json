@@ -1,7 +1,7 @@
 {
   "name": "react-native-ota-client",
-  "version": "0.2.0-beta.1",
-  "description": "Android over-the-air JavaScript updates for React Native applications",
+  "version": "0.3.0",
+  "description": "Android and iOS OTA updates and over-the-air JavaScript updates for React Native apps",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
@@ -42,7 +42,15 @@
   },
   "keywords": [
     "react-native",
-    "android"
+    "react-native-ota",
+    "react-native-ota-updates",
+    "react-native-updates",
+    "ota",
+    "ota-updates",
+    "over-the-air",
+    "over-the-air-updates",
+    "android",
+    "ios"
   ],
   "repository": {
     "type": "git",

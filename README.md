@@ -167,37 +167,6 @@ override func bundleURL() -> URL? {
 
 Provide the configuration from host-owned build settings and bundle only the public verification key. Use HTTPS for release builds. `allowLocalHttp` is for explicit local development only and is restricted to `localhost`, `127.0.0.1`, or `::1`; OTA downloads must match the configured server origin. iOS returns whether an update is staged from `closeAppToApplyUpdate()` and requires the user to relaunch. Call `markUpdateSuccessful()` after the first usable React screen mounts.
 
-The example app reads `OTA_SERVER_URL`, `OTA_RUNTIME_VERSION`, and `OTA_CHANNEL` from its Info.plist build substitutions and expects an `ota_publisher_public.pem` public key resource in the app bundle. Configure these values and add the matching public key to exercise its OTA flow.
-
-## Development and verification
-
-For implementation architecture, behavioral invariants, suggested change workflow, and verification commands, see the [coding-agent implementation guide](agent.md).
-
-From the SDK package directory, install the locked Yarn dependencies with the bundled Yarn executable and build its example:
-
-```sh
-node .yarn/releases/yarn-4.18.1.cjs install
-node .yarn/releases/yarn-4.18.1.cjs workspace react-native-ota-client-example build:android
-```
-
-The Android library unit tests run through the example's Gradle project:
-
-```sh
-cd example/android
-./gradlew :react-native-ota-client:testDebugUnitTest
-```
-
-Build a development debug app to verify native linking and Metro. OTA activation requires a release APK; debug builds use Metro and report activation as disabled.
-
-For iOS, run `pod install` from `example/ios`, then build the `OtaSdkExample` scheme for Debug and Release. Debug uses Metro; Release selects a verified OTA bundle when configured and otherwise uses the embedded bundle. The standalone activation-state checks can be run from the package root with:
-
-```sh
-swiftc ios/OtaActivationPolicy.swift ios/Tests/main.swift -o /tmp/ota-activation-policy-tests
-/tmp/ota-activation-policy-tests
-```
-
-Signature/package validation tests and live simulator/device activation and rollback exercises remain required before claiming end-to-end OTA readiness.
-
 For the companion OTA server API and release contract, see the [`react-native-ota-server` GitHub repository](https://github.com/arjunnarangali/react-native-ota-server).
 
 ## License
