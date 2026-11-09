@@ -15,7 +15,8 @@ Full setup and API guides are at [docs.ota.arjunis.me](https://docs.ota.arjunis.
 - [JavaScript API](https://docs.ota.arjunis.me/guide/javascript-api)
 - [Android setup](https://docs.ota.arjunis.me/guide/android)
 - [iOS setup](https://docs.ota.arjunis.me/guide/ios)
-- [Server contract](https://docs.ota.arjunis.me/server)
+- [Server guide](https://docs.ota.arjunis.me/server/)
+- [Server API and client contract](https://docs.ota.arjunis.me/server/api#client-contract)
 
 ## Requirements and support
 
@@ -49,8 +50,6 @@ await OTAUpdates.closeAppToApplyUpdate();
 `markUpdateSuccessful()` should run after the first React screen has mounted. `closeAppToApplyUpdate()` only succeeds when a verified update is staged and waiting for a restart. Debug applications report OTA activation as disabled because Metro supplies the JavaScript bundle.
 
 On iOS, apps cannot terminate themselves. When `closeAppToApplyUpdate()` returns `true`, ask the user to leave and reopen the app to load the staged bundle.
-
-The package also retains the generated-template `multiply()` example; it is not part of the OTA API.
 
 ## Android configuration
 

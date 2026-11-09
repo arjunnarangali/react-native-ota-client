@@ -13,7 +13,7 @@ This file is a handoff for agents implementing changes in `react-native-ota-clie
 | Area | Location | Responsibility |
 | --- | --- | --- |
 | JS public API | `src/index.tsx`, `src/NativeOTAUpdates.ts` | Export `OTAUpdates` and define its TurboModule methods and status type. |
-| Android module registration | `android/src/main/java/com/otasdk/OtaSdkPackage.kt` | Register the OTA module and the generated-template sample module through autolinking. |
+| Android module registration | `android/src/main/java/com/otasdk/OtaSdkPackage.kt` | Register the OTA TurboModule through autolinking. |
 | Host-facing SDK | `android/src/main/java/com/otasdk/OtaSdkUpdates.kt`, `OtaSdkConfig.kt` | Accept host configuration and expose startup/update operations. |
 | Update orchestration | `android/src/main/java/com/otasdk/OtaUpdateManager.kt` | Check for updates, download artifacts, stage releases, and maintain activation state. |
 | Release verification | `android/src/main/java/com/otasdk/OtaReleaseManifest.kt` | Parse and verify signed release metadata against the configured app, runtime, channel, and public key. |

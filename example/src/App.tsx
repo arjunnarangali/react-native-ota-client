@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Text, View, StyleSheet } from 'react-native';
-import {
-  OTAUpdates,
-  multiply,
-  type OtaUpdateStatus,
-} from 'react-native-ota-client';
-
-const multiplyResult = multiply(3, 7);
+import { OTAUpdates, type OtaUpdateStatus } from 'react-native-ota-client';
 
 export default function App() {
   const [status, setStatus] = useState<OtaUpdateStatus | null>(null);
@@ -37,7 +31,6 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text>Result: {multiplyResult}</Text>
       <Text>OTA: {status?.status ?? 'loading'}</Text>
       <Text>{message || status?.message}</Text>
       <Button title="Check for updates" onPress={checkForUpdate} />

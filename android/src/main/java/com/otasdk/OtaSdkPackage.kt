@@ -9,7 +9,6 @@ import com.facebook.react.module.model.ReactModuleInfoProvider
 class OtaSdkPackage : BaseReactPackage() {
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
     return when (name) {
-      OtaSdkModule.NAME -> OtaSdkModule(reactContext)
       OtaUpdatesModule.NAME -> OtaUpdatesModule(reactContext)
       else -> null
     }
@@ -17,7 +16,6 @@ class OtaSdkPackage : BaseReactPackage() {
 
   override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
     mapOf(
-      OtaSdkModule.NAME to moduleInfo(OtaSdkModule.NAME, OtaSdkModule::class.java.name),
       OtaUpdatesModule.NAME to moduleInfo(OtaUpdatesModule.NAME, OtaUpdatesModule::class.java.name),
     )
   }
