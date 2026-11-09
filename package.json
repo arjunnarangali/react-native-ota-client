@@ -1,6 +1,6 @@
 {
   "name": "react-native-ota-client",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Android and iOS OTA updates and over-the-air JavaScript updates for React Native apps",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
