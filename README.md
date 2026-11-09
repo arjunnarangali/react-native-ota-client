@@ -1,8 +1,21 @@
 # react-native-ota-client
 
+[![npm version](https://img.shields.io/npm/v/react-native-ota-client.svg)](https://www.npmjs.com/package/react-native-ota-client)
+[![Documentation](https://img.shields.io/badge/docs-docs.ota.arjunis.me-blue)](https://docs.ota.arjunis.me)
+
 Android and iOS OTA update support for React Native applications using the New Architecture and Hermes. The SDK checks for signed releases, verifies the release manifest and packaged bundle, stages verified updates, selects the bundle on cold start, and rolls back a release that does not confirm healthy.
 
 OTA can update JavaScript and bundled assets. Native code, permissions/entitlements, React Native/Hermes versions, and Codegen contract changes require a new APK/IPA.
+
+## Documentation
+
+Full setup and API guides are at [docs.ota.arjunis.me](https://docs.ota.arjunis.me).
+
+- [Installation](https://docs.ota.arjunis.me/guide/installation)
+- [JavaScript API](https://docs.ota.arjunis.me/guide/javascript-api)
+- [Android setup](https://docs.ota.arjunis.me/guide/android)
+- [iOS setup](https://docs.ota.arjunis.me/guide/ios)
+- [Server contract](https://docs.ota.arjunis.me/server)
 
 ## Requirements and support
 
@@ -128,10 +141,10 @@ Use HTTPS for staging and production, with `allowInsecureHttp = false`. Local de
 
 `OtaSdkUpdates` exposes the Android startup and host integration API:
 
-- `initialize(context, config)` — configure the manager once before use.
-- `beginProcess()` — select/rollback the startup bundle before React Native starts.
-- `bundlePathForReactHost()` — return the selected bundle path, or `null` for the APK bundle.
-- `status()`, `checkForUpdate()`, `markHealthy()`, and `closeAppForUpdate(activity)` — operations used by the TurboModule implementation.
+- `initialize(context, config)` configures the manager once before use.
+- `beginProcess()` selects or rolls back the startup bundle before React Native starts.
+- `bundlePathForReactHost()` returns the selected bundle path, or `null` for the APK bundle.
+- `status()`, `checkForUpdate()`, `markHealthy()`, and `closeAppForUpdate(activity)` are the operations used by the TurboModule implementation.
 
 The SDK autolinks a single `OtaSdkPackage` containing both the sample `OtaSdk` TurboModule and the OTA `OTAUpdates` TurboModule. Do not add another manual package registration in the host app.
 

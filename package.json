@@ -61,7 +61,7 @@
   "bugs": {
     "url": "https://github.com/arjunnarangali/react-native-ota-client/issues"
   },
-  "homepage": "https://github.com/arjunnarangali/react-native-ota-client#readme",
+  "homepage": "https://docs.ota.arjunis.me/",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
